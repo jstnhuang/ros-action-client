@@ -1,0 +1,235 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../ros-websocket/ros-websocket.html">
+
+<!--
+An element for using ActionLib with roslibjs.
+
+Example:
+
+    <ros-websocket ros="{{ros}}"></ros-websocket>
+    <ros-action-client
+      auto
+      id="client"
+      server="fibonacci"
+      action-type="actionlib_tutorials/FibonacciAction"
+      goal="{{goal}}"
+      on-feedback="handleFeedback"
+      on-result="handleResult"
+    ></ros-action-client>
+
+## Executing an action
+If `auto` is set, then setting the goal will execute the action.
+
+    this.$.client.goal = {order: 7};
+
+If `auto` is not set, then execute the action with send().
+
+    this.$.client.send({order: 7});
+
+## Getting feedback or the result
+You can get feedback or the result in two ways: declaratively or through events.
+
+### Declarative
+You can bind `last-feedback` and `last-result` to variables, corresponding to the most recent action executed:
+
+    <ros-websocket ros="{{ros}}"></ros-websocket>
+    <ros-action-client
+      auto
+      id="client"
+      server="fibonacci"
+      action-type="actionlib_tutorials/FibonacciAction"
+      goal="{{goal}}"
+      last-feedback="{{lastFeedback}}"
+      last-result="{{lastResult}}"
+    ></ros-action-client>
+
+### Events
+You can write a handler to get feedback or result messages, as in the first example above.
+The handlers look like:
+
+    function handleFeedback(evt) {
+      console.log(evt.detail.sequence);
+    }
+
+    function handleResult(evt) {
+      console.log(evt.detail.sequence);
+    }
+
+## Cancelling an action
+To cancel an action in progress, call `cancel()`:
+
+    this.$.client.cancel();
+
+@demo demo/index.html
+-->
+
+<dom-module id="ros-action-client">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+    </style>
+    <h2>Hello [[prop1]]</h2>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'ros-action-client',
+
+      properties: {
+        /**
+         * If true, sends the goal automatically when the goal changes.
+         */
+        auto: {
+          type: Boolean,
+          default: false,
+        },
+
+        /**
+         * The name of the actionlib server, e.g., /fibonacci
+         *
+         * @type string
+         */
+        server: {
+          type: String,
+          observer: '_initClient',
+        },
+
+        /**
+         * The type of the action, e.g., actionlib_tutorials/FibonacciAction
+         */
+        actionType: {
+          type: String,
+          observer: '_initClient',
+        },
+
+        /**
+         * The goal msg, as a JavaScript object.
+         * You do not need to wrap it in a ROSLIB.Goal.
+         */
+        goal: {
+          type: Object,
+          default: null,
+          observer: '_goalChanged',
+        },
+
+        /**
+         * The last feedback message returned by the service.
+         */
+        lastFeedback: {
+          type: Object,
+          default: null,
+          notify: true,
+          readOnly: true,
+        },
+
+        /**
+         * The last result that was returned.
+         */
+        lastResult: {
+          type: String,
+          default: null,
+          notify: true,
+          readOnly: true,
+        },
+
+        /**
+         * The ros object from the <ros-websocket> element.
+         */ 
+        ros: {
+          type: Object,
+          default: null,
+          observer: '_initClient',
+        },
+
+        _client: {
+          type: Object,
+          default: null,
+        },
+
+        _actionGoal: {
+          type: Object,
+          default: null,
+        },
+      },
+
+      _goalChanged: function() {
+        if (this._client && this.goal && this.auto) {
+          this.send(this.goal);
+        }
+      },
+
+      _initClient: function() {
+        if (this.ros && this.server && this.actionType) {
+          var that = this;
+          this._client = new ROSLIB.ActionClient({
+            ros: that.ros,
+            serverName: that.server,
+            actionName: that.actionType
+          });
+        }
+      },
+
+      /**
+       * Cancels an in-progress action.
+       * If no action is in progress, then this does nothing.
+       *
+       * @param Object request The request object, as a JavaScript object.
+       */
+      cancel: function() {
+        if (!this._client) {
+          var error = 'ros-action-client was not initialized before cancelling.';
+          console.error(error);
+          return;
+        }
+        if (this._actionGoal) {
+          this._actionGoal.cancel();
+        }
+      },
+
+      /**
+       * Sends the goal to the action server.
+       *
+       * @param Object request The request object, as a JavaScript object.
+       */
+      send: function(goal) {
+        if (this._client && goal) {
+          var that = this;
+          this._actionGoal = new ROSLIB.Goal({
+            actionClient: that._client,
+            goalMessage: goal
+          });
+          this._actionGoal.on('feedback', function(feedback) {
+            that._setLastFeedback(feedback);
+            that.fire('feedback', feedback);
+          });
+          this._actionGoal.on('result', function(result) {
+            that._setLastResult(result);
+            that._actionGoal = null;
+            that.fire('result', result);
+          });
+          this._actionGoal.send();
+        } else {
+          var error = 'ros-action-client was not initialized before sending goal.';
+          console.error(error);
+        }
+      },
+
+      /**
+       * Fires whenever a feedback message is received.
+       * The feedback message is given as a JavaScript object in the event detail.
+       *
+       * @event feedback
+       */
+
+      /**
+       * Fires whenever a result message is received.
+       * The error message is given as the event detail.
+       *
+       * @event result
+       */
+    });
+  </script>
+</dom-module>
