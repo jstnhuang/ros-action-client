@@ -7,5 +7,5 @@ A Polymer element for the roslibjs ActionClient.
 
 To install:
 ```
-bower install --save jstnhuang/ros-service
+bower install --save jstnhuang/ros-action-client
 ```
