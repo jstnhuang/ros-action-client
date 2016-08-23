@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+  <head>
+    <title>ros-action-client demo</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+    <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+    <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+
+    <link rel="import" href="../ros-action-client.html">
+    <link rel="import" href="../../ros-websocket/ros-websocket.html">
+
+    <style is="custom-style" include="demo-pages-shared-styles">
+    </style>
+  </head>
+  <body>
+
+    <div class="vertical-section-container centered">
+      <h3>Basic ros-action-client Demo</h3>
+      <demo-snippet>
+        <template id="t" is="dom-bind">
+          <ros-websocket auto id="ros" ros="{{ros}}"></ros-websocket>
+          <ros-action-client
+            id="client"
+            server="/fibonacci"
+            action-type="actionlib_tutorials/FibonacciAction"
+            last-feedback="{{lastFeedback}}"
+            last-result="{{lastResult}}"
+            on-feedback="handleFeedback"
+            on-result="handleResult"
+            ros="{{ros}}"
+          ></ros-action-client>
+          <div>
+            <label>
+              Websocket URL:
+              <input type="text" id="urlInput" value="ws://localhost:9090"></input>
+            </label>
+            <input id="connectButton" type="button" value="Connect"></input>
+          </div>
+          <div>
+            <label>
+              Goal:
+              <input type="text" id="goalInput" value="7"></input>
+            </label>
+            <input id="sendButton" type="button" value="Send"></input>
+            <input id="cancelButton" type="button" value="Cancel"></input>
+          </div>
+          <div>
+            Feedback: [
+            <template is="dom-repeat" items={{lastFeedback.sequence}}>
+              {{item}}, 
+            </template>
+            ]<br />
+            Result: [
+            <template is="dom-repeat" items={{lastResult.sequence}}>
+              {{item}}, 
+            </template>
+            ]<br />
+
+          </div>
+          <p>
+            To run the demo:
+            <ol>
+              <li><code>roslaunch rosbridge_server rosbridge_websocket.launch</code></li>
+              <li><code>rosrun actionlib_tutorials fibonacci_server</code></li>
+            </ol>
+            Check the JavaScript console to verify that you are connected to the websocket server.
+          </p>
+        </template>
+      </demo-snippet>
+    </div>
+    <script>
+      var t = document.querySelector('#t');
+      t.addEventListener('dom-change', function() {
+        var rosElement = t.$.ros;
+        rosElement.addEventListener('connection', function() {
+          console.log('Connected to the websocket server.');
+        });
+        rosElement.addEventListener('error', function(error) {
+          console.log('Error connecting to the websocket server:', error);
+        });
+        rosElement.addEventListener('close', function() {
+          console.log('Connection to websocket server closed.');
+        });
+        t.$.connectButton.addEventListener('click', function() {
+          rosElement.url = document.querySelector('#urlInput').value;
+        });
+
+        var client = t.$.client;
+        t.handleFeedback = function(evt) {
+          console.log('Feedback:', evt.detail);
+        }
+        t.handleResult = function(evt) {
+          console.log('Result:', evt.detail);
+        }
+        t.$.sendButton.addEventListener('click', function() {
+          var goal = {
+            order: parseInt(document.querySelector('#goalInput').value)
+          };
+          client.send(goal);
+        });
+        t.$.cancelButton.addEventListener('click', function() {
+          client.cancel();
+        });
+      });
+    </script>
+  </body>
+</html>
