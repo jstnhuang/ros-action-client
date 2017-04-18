@@ -2,6 +2,7 @@
   "name": "ros-action-client",
   "description": "A Polymer element for the roslibjs ActionClient.",
   "main": "ros-action-client.html",
+  "license": "https://opensource.org/licenses/MIT",
   "dependencies": {
     "polymer": "Polymer/polymer#^1.4.0",
     "ros-websocket": "jstnhuang/ros-websocket#^2.0.0"
