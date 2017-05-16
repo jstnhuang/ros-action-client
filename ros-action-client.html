@@ -15,6 +15,7 @@ Example:
       goal="{{goal}}"
       on-feedback="handleFeedback"
       on-result="handleResult"
+      ros="[[ros]]"
     ></ros-action-client>
 
 ## Executing an action
@@ -41,6 +42,7 @@ You can bind `last-feedback` and `last-result` to variables, corresponding to th
       goal="{{goal}}"
       last-feedback="{{lastFeedback}}"
       last-result="{{lastResult}}"
+      ros="[[ros]]"
     ></ros-action-client>
 
 ### Events
@@ -214,7 +216,7 @@ To cancel an action in progress, call `cancel()`:
           var error = 'ros-action-client was not initialized before sending goal.';
           console.error(error);
         }
-      },
+      }
 
       /**
        * Fires whenever a feedback message is received.
